@@ -58,8 +58,8 @@ public class DefaultAgent extends Agent {
     private void sendValues() {
         ACLMessage message = new ACLMessage(ACLMessage.INFORM);
 
-        for (String neighborNickname : agentNeighbours) {
-            message.addReceiver(new AID(neighborNickname, AID.ISLOCALNAME));
+        for (String agentNeighbourName : agentNeighbours) {
+            message.addReceiver(new AID(agentNeighbourName, AID.ISLOCALNAME));
         }
 
         StringBuilder messageContentBuilder = new StringBuilder();
@@ -112,10 +112,10 @@ public class DefaultAgent extends Agent {
 
         String[] contentSplit = content.split(" ");
         for (int i = 0; i < contentSplit.length; i += 2) {
-            String neighborNickname = contentSplit[i];
-            Float neighborValue = Float.parseFloat(contentSplit[i + 1]);
+            String agentNeighbourName = contentSplit[i];
+            Float agentNeighborValue = Float.parseFloat(contentSplit[i + 1]);
 
-            agentsValues.put(neighborNickname, neighborValue);
+            agentsValues.put(agentNeighbourName, agentNeighborValue);
         }
 
         return agentsValues;

@@ -14,14 +14,14 @@ public class MainController {
     static {
         graph = Arrays.asList(
                 Arrays.asList(1, 3),
-                Arrays.asList(0, 2, 3),
-                Arrays.asList(1, 3),
-                Arrays.asList(0, 1, 2, 4),
-                Arrays.asList(2, 3),
-                Arrays.asList(1, 4),
-                Arrays.asList(2, 4),
+                Arrays.asList(0, 2, 3, 5, 7, 8),
+                Arrays.asList(1, 3, 4, 6),
+                Arrays.asList(0, 1, 2, 4, 9),
+                Arrays.asList(2, 3, 5, 6, 9),
+                Arrays.asList(1, 4, 8, 9),
+                Arrays.asList(2, 4, 9),
                 Arrays.asList(1, 8),
-                Arrays.asList(1, 5),
+                Arrays.asList(1, 5, 7),
                 Arrays.asList(3, 4, 5, 6)
         );
     }
