@@ -40,10 +40,13 @@ public class MainController {
 
     private static void initNodes(ContainerController container) {
 
+        double sum = 0;
+
         for (int i = 0; i < graph.size(); i++) {
             String agentName = "Agent-" + i;
 
-            float agentValue = new Random().nextFloat() * 100;
+            double agentValue = new Random().nextDouble() * 100;
+            sum += agentValue;
             List<Integer> agentNeighbours = graph.get(i);
             List<String> agentNeighboursStr = new ArrayList<>();
 
@@ -60,9 +63,11 @@ public class MainController {
                 AgentController agent = container.createNewAgent(agentName, "ru.spbu.DefaultAgent", new Object[] {result});
                 agent.start();
             } catch (Exception e) {
-                System.err.println("Ошибка при создании агента " + agentName + ": " + e.getMessage());
+                System.err.println("Error creating agent " + agentName + ": " + e.getMessage());
                 e.printStackTrace();
             }
         }
+
+        System.out.println("Expected average: " + sum / (double) graph.size());
     }
 }

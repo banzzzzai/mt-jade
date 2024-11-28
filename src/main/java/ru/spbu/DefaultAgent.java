@@ -11,9 +11,9 @@ import java.util.*;
 
 public class DefaultAgent extends Agent {
 
-    private float agentValue;
+    private double agentValue;
     private List<String> agentNeighbours;
-    private HashMap<String, Float> agentsValues;
+    private HashMap<String, Double> agentsValues;
 
     @Override
     protected void setup() {
@@ -22,7 +22,7 @@ public class DefaultAgent extends Agent {
         agentsValues = new HashMap<>();
 
         Map<String, Object> result = (Map<String, Object>) args[0];
-        agentValue = (float) result.get("agentValue");
+        agentValue = (double) result.get("agentValue");
         agentNeighbours = (List<String>) result.get("agentNeighbours");
         agentsValues.put(getAID().getLocalName(), agentValue);
 
@@ -64,7 +64,7 @@ public class DefaultAgent extends Agent {
 
         StringBuilder messageContentBuilder = new StringBuilder();
 
-        for (Map.Entry<String, Float> entry : agentsValues.entrySet()) {
+        for (Map.Entry<String, Double> entry : agentsValues.entrySet()) {
             messageContentBuilder.append(entry.getKey());
             messageContentBuilder.append(" ");
             messageContentBuilder.append(entry.getValue());
@@ -81,7 +81,7 @@ public class DefaultAgent extends Agent {
 
     private void processMessage(ACLMessage message) {
         String content = message.getContent();
-        HashMap<String, Float> receivedAgentsValues = parseMessage(content);
+        HashMap<String, Double> receivedAgentsValues = parseMessage(content);
 
         int tmp = agentsValues.size();
         agentsValues.putAll(receivedAgentsValues);
@@ -107,13 +107,13 @@ public class DefaultAgent extends Agent {
 
     }
 
-    private HashMap<String, Float> parseMessage(String content) {
-        HashMap<String, Float> agentsValues = new HashMap<>();
+    private HashMap<String, Double> parseMessage(String content) {
+        HashMap<String, Double> agentsValues = new HashMap<>();
 
         String[] contentSplit = content.split(" ");
         for (int i = 0; i < contentSplit.length; i += 2) {
             String agentNeighbourName = contentSplit[i];
-            Float agentNeighborValue = Float.parseFloat(contentSplit[i + 1]);
+            Double agentNeighborValue = Double.parseDouble(contentSplit[i + 1]);
 
             agentsValues.put(agentNeighbourName, agentNeighborValue);
         }
@@ -122,12 +122,12 @@ public class DefaultAgent extends Agent {
     }
 
     public void calculateAverage() {
-        int sumValues = 0;
-        for (Float value : agentsValues.values()) {
+        double sumValues = 0;
+        for (Double value : agentsValues.values()) {
             sumValues += value;
         }
 
-        double average = 1.0 * sumValues / agentsValues.size();
+        double average = sumValues / (double) agentsValues.size();
 
         System.out.println(getAID().getLocalName() + " agent calculated average = " + average);
     }
