@@ -57,6 +57,10 @@ public class DefaultAgent extends Agent {
 
     private void sendValues() {
         ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+        Random random = new Random();
+        double noiseStdDev = 5; // Стандартное отклонение шума
+        double dropProbability = 0.2; // Вероятность обрыва связи (20%)
+        int delayTicks = 1; // Задержка в тиках перед отправкой сообщения
 
         for (String agentNeighbourName : agentNeighbours) {
             message.addReceiver(new AID(agentNeighbourName, AID.ISLOCALNAME));
@@ -65,18 +69,39 @@ public class DefaultAgent extends Agent {
         StringBuilder messageContentBuilder = new StringBuilder();
 
         for (Map.Entry<String, Double> entry : agentsValues.entrySet()) {
+            // Генерируем шум с медианой 0
+            double noise = random.nextGaussian() * noiseStdDev; // Генерация шума
+            double noisyValue = entry.getValue() + noise; // Добавляем шум к значению
+
             messageContentBuilder.append(entry.getKey());
             messageContentBuilder.append(" ");
-            messageContentBuilder.append(entry.getValue());
+            messageContentBuilder.append(noisyValue); // Используем зашумленное значение
             messageContentBuilder.append(" ");
         }
 
         String messageContent = messageContentBuilder.toString();
         message.setContent(messageContent);
 
-        send(message);
+        // Проверяем, нужно ли обрывать связь
+        if (random.nextDouble() < dropProbability) {
+            System.out.println(getAID().getLocalName() + " agent dropped the message due to connection failure.");
+            return; // Прерываем выполнение метода, не отправляя сообщение
+        }
 
-        System.out.println(getAID().getLocalName() + " agent sent message with content = " + messageContent);
+        // Добавляем задержку перед отправкой сообщения
+        addBehaviour(new OneShotBehaviour() {
+            @Override
+            public void action() {
+                // Задержка перед отправкой
+                try {
+                    Thread.sleep(delayTicks * 1000); // Задержка в миллисекундах
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                send(message);
+                System.out.println(getAID().getLocalName() + " agent sent message with content = " + messageContent);
+            }
+        });
     }
 
     private void processMessage(ACLMessage message) {
