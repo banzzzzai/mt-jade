@@ -41,6 +41,14 @@ public class MainController {
     private static void initNodes(ContainerController container) {
 
         double sum = 0;
+        int maxNeighbours = 0;
+
+        for (int i = 0; i < graph.size(); i++) {
+            List<Integer> agentNeighbours = graph.get(i);
+            maxNeighbours = Math.max(maxNeighbours, agentNeighbours.size());
+        }
+
+        double alpha = 1.0 / maxNeighbours;
 
         for (int i = 0; i < graph.size(); i++) {
             String agentName = "Agent-" + i;
@@ -58,6 +66,7 @@ public class MainController {
             Map<String, Object> result = new HashMap<>();
             result.put("agentValue", agentValue);
             result.put("agentNeighbours", agentNeighboursStr);
+            result.put("alpha", alpha);
 
             try {
                 AgentController agent = container.createNewAgent(agentName, "ru.spbu.DefaultAgent", new Object[] {result});
@@ -69,5 +78,6 @@ public class MainController {
         }
 
         System.out.println("Expected average: " + sum / (double) graph.size());
+        System.out.println("Maximum number of neighbors: " + maxNeighbours);
     }
 }

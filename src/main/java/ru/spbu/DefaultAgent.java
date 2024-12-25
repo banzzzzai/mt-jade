@@ -13,22 +13,28 @@ public class DefaultAgent extends Agent {
 
     private double agentValue;
     private List<String> agentNeighbours;
-    private HashMap<String, Double> agentsValues;
+    private double alpha;
+    private int currentTick; // Текущий тик
+    private static final int MAX_TICKS = 1000; // Максимальное количество тиков
+    double noiseStdDev = 2; // Стандартное отклонение шума
+    double dropProbability = 0.2; // Вероятность обрыва связи (20%)
 
     @Override
     protected void setup() {
         System.out.println(getAID().getLocalName() + " agent creating");
         Object[] args = getArguments();
-        agentsValues = new HashMap<>();
 
         Map<String, Object> result = (Map<String, Object>) args[0];
         agentValue = (double) result.get("agentValue");
         agentNeighbours = (List<String>) result.get("agentNeighbours");
-        agentsValues.put(getAID().getLocalName(), agentValue);
+        alpha = (double) result.get("alpha");
+
+        currentTick = 0; // Инициализируем текущий тик
 
         System.out.println(getAID().getLocalName() + " got value = " + this.agentValue);
         System.out.println(getAID().getLocalName() + " got neighbors = " + this.agentNeighbours);
 
+        // Отправляем значения соседям
         addBehaviour(new OneShotBehaviour() {
             @Override
             public void action() {
@@ -36,7 +42,8 @@ public class DefaultAgent extends Agent {
             }
         });
 
-        addBehaviour(new Behaviour() {
+        // Обрабатываем входящие сообщения
+        addBehaviour(new CyclicBehaviour(this) {
             @Override
             public void action() {
                 ACLMessage message = receive();
@@ -46,41 +53,18 @@ public class DefaultAgent extends Agent {
                     block();
                 }
             }
-
-            @Override
-            public boolean done() {
-                return false;
-            }
         });
-
     }
 
     private void sendValues() {
         ACLMessage message = new ACLMessage(ACLMessage.INFORM);
         Random random = new Random();
-        double noiseStdDev = 5; // Стандартное отклонение шума
-        double dropProbability = 0.2; // Вероятность обрыва связи (20%)
-        int delayTicks = 1; // Задержка в тиках перед отправкой сообщения
 
         for (String agentNeighbourName : agentNeighbours) {
             message.addReceiver(new AID(agentNeighbourName, AID.ISLOCALNAME));
         }
 
-        StringBuilder messageContentBuilder = new StringBuilder();
-
-        for (Map.Entry<String, Double> entry : agentsValues.entrySet()) {
-            // Генерируем шум с медианой 0
-            double noise = random.nextGaussian() * noiseStdDev; // Генерация шума
-            double noisyValue = entry.getValue() + noise; // Добавляем шум к значению
-
-            messageContentBuilder.append(entry.getKey());
-            messageContentBuilder.append(" ");
-            messageContentBuilder.append(noisyValue); // Используем зашумленное значение
-            messageContentBuilder.append(" ");
-        }
-
-        String messageContent = messageContentBuilder.toString();
-        message.setContent(messageContent);
+        double noisyValue = agentValue + random.nextGaussian() * noiseStdDev; // Генерация шума
 
         // Проверяем, нужно ли обрывать связь
         if (random.nextDouble() < dropProbability) {
@@ -88,18 +72,21 @@ public class DefaultAgent extends Agent {
             return; // Прерываем выполнение метода, не отправляя сообщение
         }
 
+        // Генерируем случайную задержку в диапазоне от 0.01 до 0.03 секунд
+        int randomDelay = 10 + random.nextInt(20);
+
         // Добавляем задержку перед отправкой сообщения
         addBehaviour(new OneShotBehaviour() {
             @Override
             public void action() {
-                // Задержка перед отправкой
                 try {
-                    Thread.sleep(delayTicks * 1000); // Задержка в миллисекундах
+                    Thread.sleep(randomDelay); // Задержка в миллисекундах
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                message.setContent(getAID().getLocalName() + " " + noisyValue);
                 send(message);
-                System.out.println(getAID().getLocalName() + " agent sent message with content = " + messageContent);
+                System.out.println(getAID().getLocalName() + " agent sent message with content = " + message.getContent());
             }
         });
     }
@@ -108,52 +95,38 @@ public class DefaultAgent extends Agent {
         String content = message.getContent();
         HashMap<String, Double> receivedAgentsValues = parseMessage(content);
 
-        int tmp = agentsValues.size();
-        agentsValues.putAll(receivedAgentsValues);
-
-        System.out.println(getAID().getLocalName() + " agent received message with content = " + content);
-
-        if (agentsValues.size() > tmp) {
-            addBehaviour(new OneShotBehaviour() {
-                @Override
-                public void action() {
-                    sendValues();
-                }
-            });
-
-        } else {
-            addBehaviour(new OneShotBehaviour() {
-                @Override
-                public void action() {
-                    calculateAverage();
-                }
-            });
-        }
-
+        // Обновляем значение на основе полученных значений
+        calculateNewValue(receivedAgentsValues);
     }
 
     private HashMap<String, Double> parseMessage(String content) {
         HashMap<String, Double> agentsValues = new HashMap<>();
-
         String[] contentSplit = content.split(" ");
         for (int i = 0; i < contentSplit.length; i += 2) {
             String agentNeighbourName = contentSplit[i];
             Double agentNeighborValue = Double.parseDouble(contentSplit[i + 1]);
-
             agentsValues.put(agentNeighbourName, agentNeighborValue);
         }
-
         return agentsValues;
     }
 
-    public void calculateAverage() {
-        double sumValues = 0;
-        for (Double value : agentsValues.values()) {
-            sumValues += value;
+    private void calculateNewValue(HashMap<String, Double> receivedAgentsValues) {
+        double sumDifferences = 0;
+        for (Double value : receivedAgentsValues.values()) {
+            sumDifferences += (value - agentValue);
         }
 
-        double average = sumValues / (double) agentsValues.size();
+        // Обновляем значение агента
+        agentValue += alpha * sumDifferences;
+        System.out.println(getAID().getLocalName() + " agent updated value = " + agentValue);
 
-        System.out.println(getAID().getLocalName() + " agent calculated average = " + average);
+        currentTick++;
+
+        if (currentTick < MAX_TICKS) {
+            sendValues();
+        } else {
+            System.out.println(getAID().getLocalName() + " agent reached max ticks and will terminate.");
+            doDelete();
+        }
     }
 }
